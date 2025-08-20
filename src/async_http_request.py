@@ -20,7 +20,9 @@ URLS = [
 ]
 
 
-async def fetch_url(session: aiohttp.ClientSession, url: str, sem: asyncio.Semaphore) -> tuple[str, int]:
+async def fetch_url(
+    session: aiohttp.ClientSession, url: str, sem: asyncio.Semaphore
+) -> tuple[str, int]:
     """Выполнение одного запроса с обработкой ошибок."""
     async with sem:  # ограничиваем число одновременных запросов
         try:
@@ -29,7 +31,7 @@ async def fetch_url(session: aiohttp.ClientSession, url: str, sem: asyncio.Semap
         except (asyncio.TimeoutError, ClientError, Exception):
             # Возвращаем 0 для любых ошибок сети
             return url, 0
-        
+
 
 async def fetch_urls(urls: list[str], file_path: str):
     results = {}
@@ -37,7 +39,9 @@ async def fetch_urls(urls: list[str], file_path: str):
 
     async with aiohttp.ClientSession() as session:
         tasks = [fetch_url(session, url, sem) for url in urls]
-        for cor in asyncio.as_completed(tasks):  # собираем результаты по мере готовности
+        for cor in asyncio.as_completed(
+            tasks
+        ):  # собираем результаты по мере готовности
             url, status = await cor
             results[url] = status
 
