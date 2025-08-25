@@ -90,6 +90,7 @@ async def app(scope, receive, send):
     )
     await send({"type": "http.response.body", "body": body})
 
+
 # -------------------------------
 # Как запустить это ASGI-приложение:
 #
