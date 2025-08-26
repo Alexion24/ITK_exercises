@@ -63,6 +63,7 @@ def worker(instance_id: int):
     except SingleExecutionError:
         print(f"[{instance_id}] - Locked, skipping execution")
 
+
 if __name__ == "__main__":
     # Запускаем несколько процессов параллельно, чтобы проверить блокировку
     process_count = 5
