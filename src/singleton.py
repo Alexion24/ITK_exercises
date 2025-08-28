@@ -21,15 +21,15 @@ class SingletonMetaClass(metaclass=SingletonMeta):
 
 # --- 2. Синглтон через __new__ ---
 class SingletonNew:
-    _instance = None
+    _instances = {}
 
     def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+        if cls not in cls._instances:
+            cls._instances[cls] = super().__new__(cls)
+        return cls._instances[cls]
 
     def __init__(self, value):
-        if not hasattr(self, "value"):  # чтобы не перезаписывать при повторных вызовах
+        if not hasattr(self, "value"):  # инициализируем только один раз
             self.value = value
 
 
