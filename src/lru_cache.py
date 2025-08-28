@@ -5,45 +5,47 @@
 # Если функция вызывается с теми же аргументами, что и ранее, возвращайте результат из кеша вместо повторного выполнения функции.
 # Декоратор должно быть возможно использовать двумя способами: с указанием максимального кол-ва элементов и без.
 
-
-import collections
-import functools
 import unittest.mock
+from collections import OrderedDict
+from functools import wraps
 
 
-def lru_cache(func=None, *, maxsize=None):
-    """Декоратор LRU cache.
-    Поддерживает использование как @lru_cache так и @lru_cache(maxsize=N).
-    """
+def lru_cache(*dargs, **dkwargs):
+    # дефолтный maxsize, если не указан
+    default_maxsize = 128
 
-    def decorator(f):
-        cache = collections.OrderedDict()
+    # вызов без параметров: @lru_cache
+    if len(dargs) == 1 and callable(dargs[0]) and not dkwargs:
+        func = dargs[0]
+        return _lru_cache_decorator(default_maxsize)(func)
+    # вызов с параметрами: @lru_cache(maxsize=3)
+    return _lru_cache_decorator(dkwargs.get("maxsize", default_maxsize))
 
-        @functools.wraps(f)
+
+def _lru_cache_decorator(maxsize):
+    def decorator(func):
+        cache = OrderedDict()
+        sentinel = object()
+
+        @wraps(func)
         def wrapper(*args, **kwargs):
-            # Создаем ключ на основе аргументов
-            key = (args, frozenset(kwargs.items()))
-            if key in cache:
-                cache.move_to_end(key)  # Использовался недавно
-                return cache[key]
+            key = (args, tuple(sorted(kwargs.items())))
+            value = cache.get(key, sentinel)
+            if value is not sentinel:
+                cache.move_to_end(key)
+                return value
 
-            result = f(*args, **kwargs)
+            result = func(*args, **kwargs)
             cache[key] = result
             cache.move_to_end(key)
 
             if maxsize is not None and len(cache) > maxsize:
-                cache.popitem(last=False)  # Удаляем самый старый элемент
-
+                cache.popitem(last=False)
             return result
 
         return wrapper
 
-    if func is None:
-        # вызвано как @lru_cache(maxsize=...)
-        return decorator
-    else:
-        # вызвано как @lru_cache
-        return decorator(func)
+    return decorator
 
 
 @lru_cache
@@ -74,13 +76,14 @@ if __name__ == "__main__":
     mocked_func.side_effect = [1, 2, 3, 4]
 
     decorated = lru_cache(maxsize=2)(mocked_func)
-    assert decorated(1, 2) == 1  # вызов функции
-    assert decorated(1, 2) == 1  # из кеша
-    assert decorated(3, 4) == 2  # вызов функции
-    assert decorated(3, 4) == 2  # из кеша
-    assert decorated(5, 6) == 3  # вызов функции, вытеснит (1,2)
-    assert decorated(5, 6) == 3  # из кеша
-    assert decorated(1, 2) == 4  # повторный вызов, так как было вытеснено
+
+    assert decorated(1, 2) == 1
+    assert decorated(1, 2) == 1
+    assert decorated(3, 4) == 2
+    assert decorated(3, 4) == 2
+    assert decorated(5, 6) == 3
+    assert decorated(5, 6) == 3
+    assert decorated(1, 2) == 4
     assert mocked_func.call_count == 4
 
-    print("Все тесты пройдены ✅")
+    print("Все тесты прошли успешно ✅")
