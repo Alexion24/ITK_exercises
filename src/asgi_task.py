@@ -9,8 +9,10 @@
 # Для решения задачи запрещено использовать фреймворки.
 
 
+import asyncio
 import json
 import urllib.request
+from typing import Any, Dict
 
 API_URL_PATTERN = "https://api.exchangerate-api.com/v4/latest/{currency}"
 PROVIDER = "https://www.exchangerate-api.com"
@@ -18,7 +20,7 @@ WARNING_UPGRADE_TO_V6 = "https://www.exchangerate-api.com/docs/free"
 TERMS = "https://www.exchangerate-api.com/terms"
 
 
-async def app(scope, receive, send):
+async def app(scope: Dict, receive: Any, send: Any) -> None:
     assert scope["type"] == "http"
     path = scope.get("path", "/")
     if not path or len(path) < 2:
@@ -45,14 +47,7 @@ async def app(scope, receive, send):
         await send({"type": "http.response.body", "body": b"Invalid currency code"})
         return
     try:
-        url = API_URL_PATTERN.format(currency=currency_code)
-        loop = __import__("asyncio").get_event_loop()
-        data = await loop.run_in_executor(
-            None,
-            lambda: json.loads(
-                urllib.request.urlopen(url, timeout=5).read().decode("utf-8")
-            ),
-        )
+        data = await fetch_exchange_rates(currency_code)
     except Exception as e:
         await send(
             {
@@ -89,6 +84,18 @@ async def app(scope, receive, send):
         }
     )
     await send({"type": "http.response.body", "body": body})
+
+
+async def fetch_exchange_rates(currency_code: str) -> Dict[str, Any]:
+    url = API_URL_PATTERN.format(currency=currency_code)
+    loop = asyncio.get_event_loop()
+    data = await loop.run_in_executor(
+        None,
+        lambda: json.loads(
+            urllib.request.urlopen(url, timeout=5).read().decode("utf-8")
+        ),
+    )
+    return data
 
 
 # -------------------------------
