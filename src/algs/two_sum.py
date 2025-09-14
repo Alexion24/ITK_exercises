@@ -11,4 +11,5 @@ def find_two_sum(nums: list, target: int) -> list:
     return []
 
 
-print(find_two_sum(NUMS, TARGET))
+if __name__ == "__main__":
+    print(find_two_sum(NUMS, TARGET))

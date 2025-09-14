@@ -15,5 +15,6 @@ def remove_duplicates(nums: list[int]) -> tuple[int, list[int]]:
     return last_idx + 1, nums[: last_idx + 1]
 
 
-k, output = remove_duplicates(NUMS)
-print(k, output)
+if __name__ == "__main__":
+    k, output = remove_duplicates(NUMS)
+    print(k, output)
